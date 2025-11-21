@@ -1,0 +1,14 @@
+{
+  "rules": [
+    {
+      "rule-type": "selection",
+      "rule-id": "1",
+      "rule-name": "include-all-tables",
+      "object-locator": {
+        "schema-name": "production_db",
+        "table-name": "%"
+      },
+      "rule-action": "include"
+    }
+  ]
+}
