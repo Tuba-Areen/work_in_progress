@@ -1,0 +1,46 @@
+---
+- name: Setup Mock On-Prem MySQL
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install MySQL Server
+      dnf:
+        name: mariadb105-server
+        state: present
+
+    - name: Start MySQL
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    - name: Create Migration Database
+      mysql_db:
+        name: production_db
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+    - name: Create DMS User with CDC Permissions
+      mysql_user:
+        name: dms_admin
+        password: "YourStrongPassword"
+        priv: "*.*:ALL,REPLICATION CLIENT,REPLICATION SLAVE"
+        host: "%"
+        state: present
+        login_unix_socket: /var/lib/mysql/mysql.sock
+
+    - name: Configure MySQL for CDC (Binary Logs)
+      lineinfile:
+        path: /etc/my.cnf.d/mariadb-server.cnf
+        line: "{{ item }}"
+      with_items:
+        - "server-id = 1"
+        - "log-bin = mysql-bin"
+        - "binlog_format = ROW"
+      notify: Restart MySQL
+
+  handlers:
+    - name: Restart MySQL
+      service:
+        name: mariadb
+        state: restarted
