@@ -1,0 +1,26 @@
+- name: Pre-migration checks on onprem mysql
+  hosts: onprem_mysql
+  become: true
+  vars:
+    secret_arn: "{{ lookup('env','ONPREM_SECRET_ARN') }}"
+    aws_region: "{{ lookup('env','AWS_REGION') }}"
+  tasks:
+    - name: Install AWS CLI if missing
+      package:
+        name: awscli
+        state: present
+
+    - name: Fetch MySQL credentials from Secrets Manager
+      shell: |
+        aws secretsmanager get-secret-value --secret-id {{ secret_arn }} --region {{ aws_region }} --query SecretString --output text > /tmp/secret.json
+      register: secret_fetch
+
+    - name: Parse secret
+      set_fact:
+        mysql_creds: "{{ lookup('file', '/tmp/secret.json') | from_json }}"
+
+    - name: Test MySQL connectivity
+      shell: |
+        mysql -h 127.0.0.1 -u {{ mysql_creds.username }} -p'{{ mysql_creds.password }}' -e "SELECT 1;"
+      register: mysql_test
+      failed_when: mysql_test.rc != 0
