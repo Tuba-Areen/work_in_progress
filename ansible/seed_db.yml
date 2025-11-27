@@ -1,0 +1,28 @@
+---
+- name: Prepare Source Database
+  hosts: source_db
+  become: yes
+  tasks:
+    - name: Ensure MySQL client is installed
+      apt:
+        name: mysql-client
+        state: present
+
+    - name: Create migration heartbeat table
+      mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_host: "{{ db_host }}"
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+
+    - name: Seed initial data for testing
+      copy:
+        content: "INSERT INTO users (name, email) VALUES ('Test User', 'test@example.com');"
+        dest: /tmp/seed.sql
+
+    - name: Import seed data
+      mysql_db:
+        name: "{{ db_name }}"
+        state: import
+        target: /tmp/seed.sql
