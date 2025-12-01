@@ -1,0 +1,98 @@
+name: "DMS GitOps Pipeline"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: 1.6.0
+
+jobs:
+  migration-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # 1. Security Scan (Trivy)
+      - name: Run Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: '.'
+          format: 'table'
+          exit-code: '1' 
+          severity: 'HIGH,CRITICAL'
+
+      # 2. Infrastructure Deployment (Terraform)
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          TF_VAR_onprem_mysql_password: ${{ secrets.MYSQL_PASSWORD }}
+          TF_VAR_admin_cidr: ${{ secrets.ADMIN_CIDR }}
+          TF_VAR_ssh_key_name: ${{ secrets.SSH_KEY_NAME }}
+          TF_VAR_onprem_ami_id: ${{ secrets.AMI_ID }}
+
+      - name: Terraform Apply
+        id: tf
+        run: |
+          terraform apply -auto-approve tfplan
+          echo "SOURCE_IP=$(terraform output -raw onprem_mysql_public_ip)" >> $GITHUB_OUTPUT
+          echo "DMS_TASK_ARN=$(terraform output -raw dms_replication_task_arn)" >> $GITHUB_OUTPUT
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+      # 3. Configuration & Seeding (Ansible)
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i "${{ steps.tf.outputs.SOURCE_IP }}," ansible/playbook.yml
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: False
+
+      # 4. Run DMS Pre-Migration Assessment
+      - name: Run DMS Assessment
+        run: |
+          aws dms start-replication-task-assessment-run \
+            --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
+            --service-access-role-arn "$(terraform output -raw dms_assessment_role_arn)" \
+            --result-location-bucket "${{ secrets.ASSESSMENT_S3_BUCKET }}" \
+            --result-location-folder "assessments/${GITHUB_RUN_ID}/" \
+            --region ${{ env.AWS_REGION }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+
+      # 5. Start Migration
+      - name: Start DMS Replication Task
+        run: |
+          aws dms start-replication-task \
+            --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
+            --start-replication-task-type start-replication \
+            --region ${{ env.AWS_REGION }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
