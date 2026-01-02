@@ -43,8 +43,8 @@ module "iam" {
   onprem_mysql_password = var.onprem_mysql_password
   # VPC
   environment = var.environment
-  vpc_id = module.vpc.vpc_id
-  
+  vpc_id      = module.vpc.vpc_id
+
 }
 
 # 4. ON-PREM EC2 (Uses resources from VPC, SG, and IAM)
