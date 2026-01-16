@@ -58,3 +58,20 @@ variable "alert_email" {
   description = "Email address to receive DMS alerts"
 }
 
+variable "replication_instance_class" {
+  type        = string
+  description = "The compute and memory capacity of the replication instance"
+  default     = "dms.t3.medium"
+}
+
+variable "allocated_storage" {
+  type        = number
+  description = "The amount of storage (in gigabytes) to be initially allocated for the replication instance"
+  default     = 20
+}
+
+variable "engine_version" {
+  type        = string
+  description = "The engine version number of the replication instance"
+  default     = "3.5.4"
+}

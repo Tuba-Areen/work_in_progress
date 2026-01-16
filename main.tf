@@ -179,6 +179,9 @@ module "rds_target" {
 module "dms" {
   source = "./modules/dms"
   name   = "dms-migration"
+  replication_instance_class = var.replication_instance_class
+  allocated_storage          = var.allocated_storage
+  engine_version             = var.engine_version
 
   # Pass outputs FROM the iam module
   kms_key_id                  = module.iam.kms_key_id

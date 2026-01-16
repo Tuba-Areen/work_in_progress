@@ -6,10 +6,10 @@ resource "aws_dms_replication_subnet_group" "main" {
 
 resource "aws_dms_replication_instance" "main" {
   replication_instance_id      = "dms-replication-instance"
-  replication_instance_class   = "dms.t3.medium"
-  allocated_storage            = 20
+  replication_instance_class   = var.replication_instance_class
+  allocated_storage            = var.allocated_storage
   multi_az                     = true
-  engine_version               = "3.5.4"
+  engine_version               = var.engine_version
   publicly_accessible          = false
   kms_key_arn                  = var.kms_key_arn_dest
   replication_subnet_group_id  = aws_dms_replication_subnet_group.main.id
