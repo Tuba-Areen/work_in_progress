@@ -54,17 +54,6 @@ resource "aws_dms_replication_task" "main" {
   tags = { Name = "MySQL Migration Task" }
 }
 
-resource "aws_dms_replication_task_individual_assessment" "main" {
-  replication_task_arn       = aws_dms_replication_task.main.arn
-  individual_assessment_name = "pre-migration-assessment"
-  
-  # These are the standard attributes for this resource
-  service_access_role_arn    = var.dms_assessment_iam_role_arn
-  result_location_bucket     = var.audit_bucket_name
-  result_kms_key_arn         = var.kms_key_arn_dest
-
-  depends_on = [aws_dms_replication_task.main]
-}
 
 
 resource "aws_sns_topic" "dms_alerts" {
