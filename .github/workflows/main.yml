@@ -67,11 +67,16 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      - name: Install Ansible AWS EC2 Inventory Plugin
+        run: ansible-galaxy collection install amazon.aws
+
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i "${{ steps.tf.outputs.SOURCE_IP }}," ansible/playbook.yml
+          ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
       # 4. Run DMS Pre-Migration Assessment
       - name: Run DMS Assessment
