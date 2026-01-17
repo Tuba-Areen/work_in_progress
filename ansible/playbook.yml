@@ -4,13 +4,13 @@
   become: yes
   tasks:
     - name: Install MySQL Server
-      dnf:
-        name: mariadb105-server
+      yum:
+        name: mysql-server
         state: present
 
-    - name: Start MySQL
+    - name: Start and enable MySQL
       service:
-        name: mariadb
+        name: mysqld
         state: started
         enabled: yes
 
@@ -18,29 +18,29 @@
       mysql_db:
         name: production_db
         state: present
-        login_unix_socket: /var/lib/mysql/mysql.sock
 
     - name: Create DMS User with CDC Permissions
       mysql_user:
         name: dms_admin
-        password: "YourStrongPassword"
+        password: "{{ mysql_password }}"
         priv: "*.*:ALL,REPLICATION CLIENT,REPLICATION SLAVE"
         host: "%"
         state: present
-        login_unix_socket: /var/lib/mysql/mysql.sock
 
     - name: Configure MySQL for CDC (Binary Logs)
       lineinfile:
-        path: /etc/my.cnf.d/mariadb-server.cnf
+        path: /etc/my.cnf
         line: "{{ item }}"
       with_items:
-        - "server-id = 1"
-        - "log-bin = mysql-bin"
-        - "binlog_format = ROW"
+        - "server-id=100"
+        - "log_bin=mysql-bin"
+        - "binlog_format=row"
+        - "expire_logs_days=7"
+        - "max_binlog_size=100M"
       notify: Restart MySQL
 
   handlers:
     - name: Restart MySQL
       service:
-        name: mariadb
+        name: mysqld
         state: restarted
