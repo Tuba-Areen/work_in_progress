@@ -20,6 +20,13 @@ resource "aws_security_group" "mysql" {
   }
 
   egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
@@ -51,6 +58,7 @@ resource "aws_instance" "mysql" {
     http_tokens = "required"
   }
 
+  associate_public_ip_address = true
   tags = {
     Name = "${var.name}-mysql"
   }
