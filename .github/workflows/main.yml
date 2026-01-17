@@ -12,6 +12,9 @@ env:
 jobs:
   migration-pipeline:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     
     steps:
       - name: Checkout Code
@@ -36,15 +39,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
           TF_VAR_onprem_mysql_password: ${{ secrets.MYSQL_PASSWORD }}
-          TF_VAR_admin_cidr: ${{ secrets.ADMIN_CIDR }}
           TF_VAR_ssh_key_name: ${{ secrets.SSH_KEY_NAME }}
-          TF_VAR_onprem_ami_id: ${{ secrets.AMI_ID }}
 
       - name: Terraform Apply
         id: tf
         run: |
           terraform apply -auto-approve tfplan
-          echo "SOURCE_IP=$(terraform output -raw onprem_mysql_public_ip)" >> $GITHUB_OUTPUT
           echo "DMS_TASK_ARN=$(terraform output -raw dms_replication_task_arn)" >> $GITHUB_OUTPUT
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
@@ -62,7 +62,7 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml
+          ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml --extra-vars "mysql_password=${{ secrets.MYSQL_PASSWORD }}"
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
