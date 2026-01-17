@@ -20,6 +20,8 @@ resource "aws_db_instance" "target" {
   backup_retention_period = 7
   skip_final_snapshot    = true
   publicly_accessible    = false
+  storage_encrypted      = true
+  kms_key_id             = var.kms_key_id
 
   tags = { Name = "DMS Target RDS" }
 }

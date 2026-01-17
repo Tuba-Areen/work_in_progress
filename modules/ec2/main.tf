@@ -20,9 +20,9 @@ resource "aws_security_group" "mysql" {
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -44,6 +44,11 @@ resource "aws_instance" "mysql" {
   root_block_device {
     volume_size = 20
     volume_type = "gp3"
+    encrypted   = true
+  }
+
+  metadata_options {
+    http_tokens = "required"
   }
 
   tags = {

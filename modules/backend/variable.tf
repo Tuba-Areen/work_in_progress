@@ -1,14 +1,19 @@
-variable "bucket_name" {
-    description = "Name of the S3 bucket for Terraform remote state"
-    type        = string
+variable "kms_key_arn" {
+  type        = string
+  description = "The ARN of the KMS key to use for S3 bucket encryption"
 }
 
-variable "environment" {
-  description = "Environment name"
+variable "bucket_name" {
   type        = string
+  description = "The name of the S3 bucket"
 }
 
 variable "dynamodb_table_name" {
-  description = "Name of the DynamoDB table for Terraform state locking"
   type        = string
+  description = "The name of the DynamoDB table"
+}
+
+variable "environment" {
+  type        = string
+  description = "The environment"
 }
