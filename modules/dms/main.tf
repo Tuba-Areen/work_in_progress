@@ -57,7 +57,8 @@ resource "aws_dms_replication_task" "main" {
 
 
 resource "aws_sns_topic" "dms_alerts" {
-  name = "dms-migration-alerts"
+  name              = "dms-migration-alerts"
+  kms_master_key_id = var.kms_key_id
 }
 
 resource "aws_sns_topic_subscription" "email" {

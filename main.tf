@@ -134,7 +134,7 @@ module "sg" {
   name   = "dms-replication-sg"
   vpc_id = module.vpc.vpc_id
   # Dynamic IP fetching
-  admin_cidr            = "${chomp(data.http.my_ip.response_body)}/32"
+  admin_cidr            = var.admin_cidr == "" ? "${chomp(data.http.my_ip.response_body)}/32" : var.admin_cidr
   onprem_mysql_password = var.onprem_mysql_password
 }
 
@@ -159,20 +159,22 @@ module "onprem_mysql" {
   vpc_id                = module.vpc.vpc_id
   subnet_id             = module.vpc.public_subnets[0]
   dms_security_group_id = module.sg.dms_sg_id
-  admin_cidr            = "${chomp(data.http.my_ip.response_body)}/32"
+  admin_cidr            = var.admin_cidr == "" ? "${chomp(data.http.my_ip.response_body)}/32" : var.admin_cidr
 
   # Dynamic AMI fetching
-  ami_id        = data.aws_ami.amazon_linux_2.id
+  ami_id        = var.onprem_ami_id == "" ? data.aws_ami.amazon_linux_2.id : var.onprem_ami_id
   instance_type = "t3.medium"
   ssh_key_name  = var.ssh_key_name
 }
 
 # 5. TARGET RDS
 module "rds_target" {
-  source     = "./modules/rds"
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
-  sg_id      = module.sg.rds_sg_id
+  source          = "./modules/rds"
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.private_subnets
+  sg_id           = module.sg.rds_sg_id
+  kms_key_id      = module.iam.kms_key_id
+  master_password = var.onprem_mysql_password
 }
 
 # 6. DMS INSTANCE & TASKS (The Consumer)
@@ -212,6 +214,7 @@ module "terraform_backend" {
   bucket_name         = "terraform-state-dms-${data.aws_caller_identity.current.account_id}"
   dynamodb_table_name = "terraform-lock-table"
   environment         = "prod"
+  kms_key_arn         = module.iam.kms_key_arn
 }
 
 
