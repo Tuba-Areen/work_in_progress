@@ -44,9 +44,6 @@ resource "aws_instance" "mysql" {
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.mysql.id]
   key_name               = var.ssh_key_name
-  user_data              = templatefile("${path.module}/userdata/mysql_install.sh",{
-    AWS_REGION = "us-east-1"
-  })
 
   root_block_device {
     volume_size = 20
