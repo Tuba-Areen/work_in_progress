@@ -42,6 +42,15 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "audit" {
   }
 }
 
+resource "aws_s3_bucket_public_access_block" "audit" {
+  bucket = aws_s3_bucket.audit.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 # Secrets Manager - On-Prem MySQL Credentials
 resource "aws_secretsmanager_secret" "onprem_mysql" {
   name       = "dms-onprem-mysql-creds"

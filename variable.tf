@@ -4,6 +4,18 @@ variable "onprem_mysql_password" {
   description = "Password for on-prem MySQL DMS user"
 }
 
+variable "admin_cidr" {
+  type        = string
+  description = "Admin IP CIDR for SSH access"
+  default     = ""
+}
+
+variable "onprem_ami_id" {
+  type        = string
+  description = "AMI ID for EC2 MySQL instance"
+  default     = ""
+}
+
 variable "ssh_key_name" {
   type        = string
   description = "EC2 Key Pair name"
