@@ -21,7 +21,7 @@
 
     - name: Create DMS User with CDC Permissions
       mysql_user:
-        name: dms_admin
+        name: dms_user
         password: "{{ mysql_password }}"
         priv: "*.*:ALL,REPLICATION CLIENT,REPLICATION SLAVE"
         host: "%"
