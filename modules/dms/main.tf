@@ -54,6 +54,11 @@ resource "aws_dms_replication_task" "main" {
   tags = { Name = "MySQL Migration Task" }
 }
 
+# The aws_dms_replication_task_individual_assessment resource was removed from this file.
+# Pre-migration assessments are run imperatively via the AWS CLI in the CI/CD pipeline,
+# rather than declaratively in Terraform. This is because assessments are one-time
+# operations, and managing them with Terraform can lead to state drift.
+
 
 
 resource "aws_sns_topic" "dms_alerts" {
