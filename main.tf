@@ -1,3 +1,7 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
 # # This replaces the 'curl' command you tried to run
 # data "http" "my_ip" {
 #   url = "https://checkip.amazonaws.com"
@@ -216,6 +220,4 @@ module "terraform_backend" {
   environment         = "prod"
   kms_key_arn         = module.iam.kms_key_arn
 }
-
-
 
