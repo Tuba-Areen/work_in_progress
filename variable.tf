@@ -26,6 +26,18 @@ variable "alert_email" {
   description = "Email for DMS notifications"
 }
 
+variable "aws_access_key" {
+  type        = string
+  description = "AWS Access Key for CI/CD"
+  sensitive   = true
+}
+
+variable "aws_secret_key" {
+  type        = string
+  description = "AWS Secret Key for CI/CD"
+  sensitive   = true
+}
+
 variable "replication_instance_class" {
   type        = string
   description = "The compute and memory capacity of the replication instance"
