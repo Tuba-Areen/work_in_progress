@@ -181,8 +181,8 @@ module "rds_target" {
 
 # 6. DMS INSTANCE & TASKS (The Consumer)
 module "dms" {
-  source = "./modules/dms"
-  name   = "dms-migration"
+  source                     = "./modules/dms"
+  name                       = "dms-migration"
   replication_instance_class = var.replication_instance_class
   allocated_storage          = var.allocated_storage
   engine_version             = var.engine_version

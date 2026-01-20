@@ -30,7 +30,7 @@ variable "ami_id" {
 variable "instance_type" {
   type        = string
   description = "EC2 Instance Type"
-  default     = "c7i-flex.large"  # Cost-effective choice for MySQL workloads
+  default     = "c7i-flex.large" # Cost-effective choice for MySQL workloads
 }
 
 variable "ssh_key_name" {
