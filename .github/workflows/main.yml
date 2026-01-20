@@ -14,34 +14,26 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # 2. Infrastructure Deployment (Terraform)
-      - name: 'configure AWS credentials'
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
-          ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
-          SECRET_ACCESS_KEY: ${{secrets.SECRET_ACCESS_KEY}}
+          aws-access-key-id: ${{ secrets.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.SECRET_ACCESS_KEY }}
           aws-region: us-east-1
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
 
       - name: Terraform Setup
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
-
-
-      - name: Cache Terraform
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.terraform.d/plugin-cache
-            .terraform
-          key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
-
 
       - name: Terraform Init
         run: terraform init -input=false
@@ -63,11 +55,7 @@ jobs:
         run: |
           terraform apply -auto-approve tfplan
           echo "DMS_TASK_ARN=$(terraform output -raw dms_replication_task_arn)" >> $GITHUB_OUTPUT
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
-      # 3. Configuration & Seeding (Ansible)
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -79,35 +67,24 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-           ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml \
-           --extra-vars "mysql_password=${{ secrets.MYSQL_PASSWORD }}" \
-           --forks 5 -vv
+          ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml \
+          --extra-vars "mysql_password=${{ secrets.MYSQL_PASSWORD }}" \
+          --forks 5 -vv
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
 
-      # 4. Run DMS Pre-Migration Assessment
       - name: Run DMS Assessment
         run: |
           aws dms start-replication-task-assessment-run \
-          --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
-          --assessment-run-name "assessment-${GITHUB_RUN_ID}" \
-          --service-access-role-arn "$(terraform output -raw dms_assessment_role_arn)" \
-          --result-location-bucket "${{ secrets.ASSESSMENT_S3_BUCKET }}" \
-          --result-location-folder "assessments/${GITHUB_RUN_ID}/"
+            --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
+            --assessment-run-name "assessment-${GITHUB_RUN_ID}" \
+            --service-access-role-arn "$(terraform output -raw dms_assessment_role_arn)" \
+            --result-location-bucket "${{ secrets.ASSESSMENT_S3_BUCKET }}" \
+            --result-location-folder "assessments/${GITHUB_RUN_ID}/"
 
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
-
-      # 5. Start Migration
       - name: Start DMS Replication Task
         run: |
           aws dms start-replication-task \
             --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
             --start-replication-task-type start-replication \
             --region ${{ env.AWS_REGION }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
