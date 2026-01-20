@@ -1,6 +1,4 @@
-provider "aws" {
-  region = "us-east-1"
-}
+
 
 # # This replaces the 'curl' command you tried to run
 # data "http" "my_ip" {
