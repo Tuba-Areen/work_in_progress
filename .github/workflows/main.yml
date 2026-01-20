@@ -21,26 +21,40 @@ jobs:
 
       # 2. Infrastructure Deployment (Terraform)
       - name: 'configure AWS credentials'
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          aws-access-key: ${{secrets.aws-access-key}}
-          aws-secret-access-key
+          ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
+          SECRET_ACCESS_KEY: ${{secrets.SECRET_ACCESS_KEY}}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Terraform Setup
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+
+      - name: Cache Terraform
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.terraform.d/plugin-cache
+            .terraform
+          key: terraform-${{ runner.os }}-${{ hashFiles('**/*.tf') }}
+
+
       - name: Terraform Init
-        run: terraform init
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
+        run: terraform init -input=false
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        run: terraform validate
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
         env:
-          
           TF_VAR_onprem_mysql_password: ${{ secrets.MYSQL_PASSWORD }}
           TF_VAR_ssh_key_name: ${{ secrets.SSH_KEY_NAME }}
 
@@ -65,7 +79,9 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml --extra-vars "mysql_password=${{ secrets.MYSQL_PASSWORD }}"
+           ansible-playbook -i ansible/inventory.aws_ec2.yml ansible/playbook.yml \
+           --extra-vars "mysql_password=${{ secrets.MYSQL_PASSWORD }}" \
+           --forks 5 -vv
         env:
           ANSIBLE_HOST_KEY_CHECKING: False
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
@@ -75,11 +91,12 @@ jobs:
       - name: Run DMS Assessment
         run: |
           aws dms start-replication-task-assessment-run \
-            --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
-            --service-access-role-arn "$(terraform output -raw dms_assessment_role_arn)" \
-            --result-location-bucket "${{ secrets.ASSESSMENT_S3_BUCKET }}" \
-            --result-location-folder "assessments/${GITHUB_RUN_ID}/" \
-            --region ${{ env.AWS_REGION }}
+          --replication-task-arn "${{ steps.tf.outputs.DMS_TASK_ARN }}" \
+          --assessment-run-name "assessment-${GITHUB_RUN_ID}" \
+          --service-access-role-arn "$(terraform output -raw dms_assessment_role_arn)" \
+          --result-location-bucket "${{ secrets.ASSESSMENT_S3_BUCKET }}" \
+          --result-location-folder "assessments/${GITHUB_RUN_ID}/"
+
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_KEY }}
