@@ -28,3 +28,8 @@ variable "vpc_id" {
   type        = string
   description = "VPC ID (for tagging purposes)"
 }
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+}

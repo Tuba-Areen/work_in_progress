@@ -4,9 +4,10 @@
   become: yes
   tasks:
     - name: Ensure MySQL client is installed
-      apt:
-        name: mysql-client
+      yum:
+        name: mysql
         state: present
+
 
     - name: Create migration heartbeat table
       mysql_db:

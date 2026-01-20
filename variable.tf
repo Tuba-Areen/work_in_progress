@@ -43,3 +43,8 @@ variable "engine_version" {
   description = "The engine version number of the replication instance"
   default     = "3.5.4"
 }
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+}

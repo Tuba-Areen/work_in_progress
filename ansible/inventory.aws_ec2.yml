@@ -6,3 +6,5 @@ filters:
   tag:Name: "onprem-mysql"
 compose:
   ansible_host: public_ip_address
+filters:
+  tag:Name: "onprem-mysql"
