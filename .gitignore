@@ -1,7 +1,6 @@
 .terraform.lock.hcl
-.terraform-version
-.terraform/
 *.tfstate
 *.tfstate.backup
-.terraform.lock.hcl
-.gitattributes
+.terraform/
+crash.log
+.terraform.version
