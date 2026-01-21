@@ -102,13 +102,4 @@ module "dms" {
   depends_on = [module.onprem_mysql, module.rds_target]
 }
 
-# 7. BACKEND (Optional, keep if you have the bucket)
-module "terraform_backend" {
-  source = "./modules/backend"
-
-  bucket_name         = "terraform-state-dms-${data.aws_caller_identity.current.account_id}"
-  dynamodb_table_name = "terraform-lock-table"
-  environment         = "prod"
-  kms_key_arn         = module.iam.kms_key_arn
-}
 
