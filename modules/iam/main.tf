@@ -88,7 +88,7 @@ resource "aws_secretsmanager_secret_version" "dest_rds" {
 }
 
 # IAM Role for DMS Assessment
-resource "aws_iam_role" "dms" {
+resource "aws_iam_role" "dms_assessment" {
   name_prefix = "dms-assessment-${var.environment}-"
 
   assume_role_policy = jsonencode({
