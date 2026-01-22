@@ -1,7 +1,9 @@
 name: Terraform Bootstrap
 
 on:
-  workflow_dispatch:   # manual trigger ONLY
+  push:
+    paths:
+      - 'work_in_progress/backend-bootstrap-tf/*'
 
 env:
   AWS_REGION: us-east-1
