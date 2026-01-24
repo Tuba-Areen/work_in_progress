@@ -102,13 +102,3 @@ module "dms" {
   depends_on = [module.onprem_mysql, module.rds_target]
 }
 
-
-terraform {
-  backend "s3" {
-    bucket         = "terraform-state-<project>-<env>-<account-id>"
-    key            = "dms/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-lock-<project>-<env>"
-    encrypt        = true
-  }
-}
